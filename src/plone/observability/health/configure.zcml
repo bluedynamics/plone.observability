@@ -1,2 +1,9 @@
 <configure xmlns="http://namespaces.zope.org/zope">
+
+  <utility
+      factory=".checks.ZODBReadinessCheck"
+      provides="plone.observability.interfaces.IReadinessCheck"
+      name="zodb"
+      />
+
 </configure>
