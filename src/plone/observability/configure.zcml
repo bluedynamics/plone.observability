@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="plone.observability">
+
+  <include package=".health" />
+  <include package=".metrics" />
+
+  <subscriber
+      for="zope.processlifetime.IProcessStarting"
+      handler=".startup.on_process_starting"
+      />
+
+</configure>

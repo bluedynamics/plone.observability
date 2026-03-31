@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plone.observability"
+version = "1.0.0a1"
+description = "Kubernetes-style health probes and metrics for Plone"
+readme = "README.md"
+license = "GPL-2.0-only"
+requires-python = ">=3.10"
+authors = [
+    { name = "Jens Klein", email = "jk@kleinundpartner.at" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Plone",
+    "Framework :: Plone :: 6.1",
+    "Framework :: Zope",
+    "Framework :: Zope :: 5",
+    "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "OFS",
+    "Products.CMFCore",
+    "Zope",
+    "zope.component",
+    "zope.interface",
+    "zope.processlifetime",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-plone",
+    "plone.app.testing",
+    "plone.testing",
+]
+
+[project.entry-points."paste.filter_app_factory"]
+observability = "plone.observability.metrics.providers.request:make_filter"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/plone"]
