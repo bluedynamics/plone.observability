@@ -1,2 +1,15 @@
 <configure xmlns="http://namespaces.zope.org/zope">
+
+  <utility
+      factory=".formatters.PrometheusFormatter"
+      provides="plone.observability.interfaces.IMetricFormatter"
+      name="prometheus"
+      />
+
+  <utility
+      factory=".formatters.JSONFormatter"
+      provides="plone.observability.interfaces.IMetricFormatter"
+      name="json"
+      />
+
 </configure>
