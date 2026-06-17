@@ -35,6 +35,11 @@ dependencies = [
     "zope.processlifetime",
 ]
 
+[project.urls]
+Homepage = "https://github.com/plone/plone.observability"
+Source = "https://github.com/plone/plone.observability"
+Issues = "https://github.com/plone/plone.observability/issues"
+
 [project.optional-dependencies]
 test = [
     "coverage[toml]",
@@ -50,3 +55,37 @@ observability = "plone.observability.metrics.providers.request:make_filter"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/plone"]
+
+[tool.towncrier]
+package = "plone.observability"
+filename = "CHANGES.md"
+directory = "news/"
+title_format = "## {version} ({project_date})"
+issue_format = "[#{issue}](https://github.com/plone/plone.observability/issues/{issue})"
+underlines = ["", "", ""]
+start_string = "<!-- towncrier release notes start -->\n"
+
+[[tool.towncrier.type]]
+directory = "breaking"
+name = "Breaking changes:"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "New features:"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bug fixes:"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "internal"
+name = "Internal:"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "documentation"
+name = "Documentation:"
+showcontent = true
