@@ -9,7 +9,9 @@ def catalog_module():
     catalog.uninstrument_catalog()
 
 
-def test_wrapper_traces_all_query_entry_points(span_exporter, monkeypatch, catalog_module):
+def test_wrapper_traces_all_query_entry_points(
+    span_exporter, monkeypatch, catalog_module
+):
     monkeypatch.setenv("PLONE_OBSERVABILITY_OTEL_ENABLED", "1")
 
     class FakeTool:
@@ -56,7 +58,9 @@ def test_instrument_catalog_wraps_standard_plone(catalog_module):
 
     catalog_module.instrument_catalog()
     assert getattr(CatalogTool.searchResults, "_otel_wrapped", False) is True
-    assert getattr(CatalogTool.unrestrictedSearchResults, "_otel_wrapped", False) is True
+    assert (
+        getattr(CatalogTool.unrestrictedSearchResults, "_otel_wrapped", False) is True
+    )
 
 
 def test_instrument_catalog_wraps_pgcatalog_when_installed(catalog_module):
