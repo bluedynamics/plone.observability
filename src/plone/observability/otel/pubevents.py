@@ -29,6 +29,7 @@ def _user_id_enabled():
         os.environ.get("PLONE_OBSERVABILITY_OTEL_USER_ID", ""), default=False
     )
 
+
 _SPAN_KEY = "plone.observability.otel.publish_span"
 _TOKEN_KEY = "plone.observability.otel.publish_token"
 
