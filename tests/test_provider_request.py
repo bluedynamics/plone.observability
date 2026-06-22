@@ -73,6 +73,31 @@ class TestRequestTracker:
         assert tracker.request_count == 1000
 
 
+class TestMiddlewareAuth:
+    def _run(self, environ):
+        from plone.observability.metrics.providers.request import (
+            ObservabilityMiddleware,
+            tracker,
+        )
+
+        def app(environ, start_response):
+            start_response("200 OK", [])
+            return [b""]
+
+        before = tracker.stats_for("authenticated")["count"]
+        ObservabilityMiddleware(app)(environ, lambda s, h, e=None: None)
+        after = tracker.stats_for("authenticated")["count"]
+        return after - before
+
+    def test_authenticated_request_recorded_as_authenticated(self):
+        delta = self._run({"plone.observability.authenticated": True})
+        assert delta == 1
+
+    def test_request_without_flag_is_anonymous(self):
+        delta = self._run({})
+        assert delta == 0
+
+
 class TestRequestMetricProvider:
     def test_implements_interface(self):
         provider = RequestMetricProvider(FakeApp())

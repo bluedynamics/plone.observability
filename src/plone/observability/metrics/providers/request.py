@@ -100,7 +100,10 @@ class ObservabilityMiddleware:
             return result
         finally:
             duration = time.time() - start
-            tracker.record(duration, status_code)
+            authenticated = bool(
+                environ.get("plone.observability.authenticated", False)
+            )
+            tracker.record(duration, status_code, authenticated)
 
 
 @implementer(IMetricProvider)
