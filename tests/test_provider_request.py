@@ -35,6 +35,24 @@ class TestRequestTracker:
         assert tracker.duration_sum > 0
         assert tracker.request_count == 3
 
+    def test_record_separates_by_auth(self):
+        tracker = RequestTracker()
+        tracker.record(0.1, 200, authenticated=True)
+        tracker.record(0.2, 200, authenticated=False)
+        tracker.record(0.3, 500, authenticated=True)
+        assert tracker.stats_for("authenticated")["count"] == 2
+        assert tracker.stats_for("anonymous")["count"] == 1
+        assert tracker.stats_for("authenticated")["errors"][500] == 1
+        assert tracker.stats_for("anonymous")["errors"] == {}
+
+    def test_aggregate_properties_sum_both_classes(self):
+        tracker = RequestTracker()
+        tracker.record(0.1, 200, authenticated=True)
+        tracker.record(0.2, 503, authenticated=False)
+        assert tracker.request_count == 2
+        assert tracker.error_counts[503] == 1
+        assert tracker.duration_sum > 0
+
     def test_thread_safety(self):
         tracker = RequestTracker()
         errors = []
@@ -53,6 +71,54 @@ class TestRequestTracker:
             t.join()
         assert not errors
         assert tracker.request_count == 1000
+
+
+class TestMiddlewareAuth:
+    def _run(self, environ):
+        from plone.observability.metrics.providers.request import (
+            ObservabilityMiddleware,
+            tracker,
+        )
+
+        def app(environ, start_response):
+            start_response("200 OK", [])
+            return [b""]
+
+        before = tracker.stats_for("authenticated")["count"]
+        ObservabilityMiddleware(app)(environ, lambda s, h, e=None: None)
+        after = tracker.stats_for("authenticated")["count"]
+        return after - before
+
+    def test_authenticated_request_recorded_as_authenticated(self):
+        delta = self._run({"plone.observability.authenticated": True})
+        assert delta == 1
+
+    def test_request_without_flag_is_anonymous(self):
+        delta = self._run({})
+        assert delta == 0
+
+
+class TestProviderAuthLabel:
+    def test_all_request_metrics_carry_auth_label(self):
+        from plone.observability.metrics.providers.request import (
+            RequestMetricProvider,
+            tracker,
+        )
+
+        tracker.record(0.1, 200, authenticated=True)
+        tracker.record(0.2, 500, authenticated=False)
+
+        metrics = list(RequestMetricProvider(FakeApp()).collect())
+        totals = [m for m in metrics if m.name == "plone_requests_total"]
+        auth_values = {m.labels["auth"] for m in totals}
+        assert auth_values == {"authenticated", "anonymous"}
+
+        errors = [m for m in metrics if m.name == "plone_request_errors"]
+        assert all("auth" in m.labels for m in errors)
+        buckets = [
+            m for m in metrics if m.name == "plone_request_duration_seconds_bucket"
+        ]
+        assert all("auth" in m.labels and "le" in m.labels for m in buckets)
 
 
 class TestRequestMetricProvider:

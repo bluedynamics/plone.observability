@@ -133,6 +133,10 @@ The default format is Prometheus text. Pass `?format=json` or an `Accept: applic
 | `plone_content_total` | gauge | global | Content objects by portal type and site |
 | `plone_content_by_state` | gauge | global | Content objects by workflow state and site |
 
+All `plone_request*` metrics additionally carry an `auth="authenticated"|"anonymous"`
+label so traffic can be split by authentication state. (User identity is never a
+metric label — only a span attribute; see the OpenTelemetry section.)
+
 ### Metric scope
 
 Metrics carry a `scope` label with value `"global"` or `"instance"`.
@@ -256,6 +260,7 @@ configured. `PLONE_OBSERVABILITY_OTEL_ENABLED` is the master on/off override.
 | `OTEL_SERVICE_NAME` | Service name on emitted spans |
 | `OTEL_TRACES_SAMPLER` | Sampling strategy |
 | `PLONE_OBSERVABILITY_OTEL_ENABLED` | `1`/`0` master override |
+| `PLONE_OBSERVABILITY_OTEL_USER_ID` | include `enduser.id` (PII) on spans; default off |
 
 Add the `egg:plone.observability#opentelemetry` filter to your WSGI pipeline for
 the root request span — see [WSGI Middleware for Request Metrics](#wsgi-middleware-for-request-metrics)
@@ -270,6 +275,9 @@ Emitted spans (depth: request + key Plone internals):
 - `catalog.searchResults` / `catalog.unrestrictedSearchResults` — per catalog
   query (standard Plone **and** plone-pgcatalog), with `plone.catalog.result_count`
 - `transaction.commit` — per ZODB transaction completion
+
+The `ZPublisher.publish` span also carries `enduser.authenticated` (always) and,
+when `PLONE_OBSERVABILITY_OTEL_USER_ID` is enabled, `enduser.id`.
 
 Application code can open child spans with the dependency-optional helper (a
 no-op when the extra is not installed):
