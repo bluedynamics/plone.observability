@@ -4,6 +4,8 @@ import threading
 
 from zope.interface import implementer
 
+from plone.base.utils import boolean_value
+
 from plone.observability.interfaces import IMetricProvider
 from plone.observability.metric import Metric
 
@@ -33,6 +35,42 @@ class LoadStoreActivityMonitor:
     def getActivityAnalysis(self, start=0, end=0, divisions=10):
         # Part of ZODB's activity-monitor API surface; unused here.
         return []
+
+
+_monitor = None  # our LoadStoreActivityMonitor, once installed
+_monitor_lock = threading.Lock()
+_warned_foreign = False
+
+
+def _monitor_enabled():
+    return boolean_value(
+        os.environ.get("PLONE_OBSERVABILITY_ZODB_ACTIVITY_MONITOR", ""),
+        default=True,
+    )
+
+
+def _ensure_activity_monitor(db):
+    """Install our load/store monitor once, if the slot is free and enabled."""
+    global _monitor, _warned_foreign
+    if _monitor is not None or not _monitor_enabled():
+        return
+    with _monitor_lock:
+        if _monitor is not None:
+            return
+        existing = db.getActivityMonitor()
+        if existing is not None:
+            if not _warned_foreign:
+                logger.warning(
+                    "ZODB activity monitor already set (%r); not installing "
+                    "plone.observability load/store monitor, so "
+                    "plone_zodb_loads_total/stores_total are unavailable",
+                    existing,
+                )
+                _warned_foreign = True
+            return
+        monitor = LoadStoreActivityMonitor()
+        db.setActivityMonitor(monitor)
+        _monitor = monitor
 
 
 @implementer(IMetricProvider)

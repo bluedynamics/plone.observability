@@ -110,3 +110,48 @@ class TestLoadStoreActivityMonitor:
         mon.closedConnection(conn)
         assert mon.loads == 5
         assert mon.stores == 1
+
+
+class FakeMonitorDB:
+    def __init__(self, existing=None):
+        self._monitor = existing
+
+    def getActivityMonitor(self):
+        return self._monitor
+
+    def setActivityMonitor(self, monitor):
+        self._monitor = monitor
+
+
+class TestEnsureActivityMonitor:
+    def _reset(self, monkeypatch):
+        from plone.observability.metrics.providers import zodb
+
+        monkeypatch.setattr(zodb, "_monitor", None)
+        monkeypatch.setattr(zodb, "_warned_foreign", False)
+        return zodb
+
+    def test_installs_when_slot_empty_and_enabled(self, monkeypatch):
+        zodb = self._reset(monkeypatch)
+        monkeypatch.delenv("PLONE_OBSERVABILITY_ZODB_ACTIVITY_MONITOR", raising=False)
+        db = FakeMonitorDB(existing=None)
+        zodb._ensure_activity_monitor(db)
+        assert isinstance(db.getActivityMonitor(), zodb.LoadStoreActivityMonitor)
+        assert zodb._monitor is db.getActivityMonitor()
+
+    def test_disabled_via_env(self, monkeypatch):
+        zodb = self._reset(monkeypatch)
+        monkeypatch.setenv("PLONE_OBSERVABILITY_ZODB_ACTIVITY_MONITOR", "0")
+        db = FakeMonitorDB(existing=None)
+        zodb._ensure_activity_monitor(db)
+        assert db.getActivityMonitor() is None
+        assert zodb._monitor is None
+
+    def test_does_not_override_foreign_monitor(self, monkeypatch):
+        zodb = self._reset(monkeypatch)
+        monkeypatch.delenv("PLONE_OBSERVABILITY_ZODB_ACTIVITY_MONITOR", raising=False)
+        foreign = object()
+        db = FakeMonitorDB(existing=foreign)
+        zodb._ensure_activity_monitor(db)
+        assert db.getActivityMonitor() is foreign
+        assert zodb._monitor is None
