@@ -11,6 +11,7 @@ install
 configure-kubernetes-probes
 scrape-with-prometheus
 enable-opentelemetry-tracing
+add-custom-spans
 add-custom-health-check
 add-custom-metric-provider
 add-custom-metric-formatter

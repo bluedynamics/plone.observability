@@ -47,5 +47,6 @@ export PLONE_OBSERVABILITY_OTEL_EXCLUDE_DEFAULTS=0
 
 ```{seealso}
 - {doc}`/reference/tracing` for the emitted spans and their attributes.
+- {doc}`/how-to/add-custom-spans` to trace your own code.
 - {doc}`/explanation/tracing` for why the spans come from Zope events and how tracing relates to metrics.
 ```

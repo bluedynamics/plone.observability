@@ -42,6 +42,10 @@ with start_span("myapp.expensive_step", {"items": n}):
     do_work()
 ```
 
+`start_span(name, attributes=None)` is a context manager.
+It opens a child of the currently active span and yields the span object, or `None` when the `opentelemetry` extra is not installed.
+
 ```{seealso}
-{doc}`/explanation/tracing` explains why the spans come from Zope events and how tracing relates to metrics.
+- {doc}`/how-to/add-custom-spans` walks through instrumenting your own code.
+- {doc}`/explanation/tracing` explains why the built-in spans come from Zope events and how tracing relates to metrics.
 ```
