@@ -1,1 +1,0 @@
-Optionally enable the standard OpenTelemetry I/O instrumentors (botocore, requests, urllib3, httpx) via ``PLONE_OBSERVABILITY_OTEL_INSTRUMENTORS=1`` so S3 blob access and outbound HTTP become child spans in the same trace. Install the instrumentation packages via the new ``opentelemetry-io`` extra. #50

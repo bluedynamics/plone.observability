@@ -2,6 +2,13 @@
 
 <!-- towncrier release notes start -->
 
+## 1.0.0b16 (2026-07-02)
+
+### New features:
+
+- Optionally enable the standard OpenTelemetry I/O instrumentors (botocore, requests, urllib3, httpx) via ``PLONE_OBSERVABILITY_OTEL_INSTRUMENTORS=1`` so S3 blob access and outbound HTTP become child spans in the same trace. Install the instrumentation packages via the new ``opentelemetry-io`` extra. ([#50](https://github.com/plone/plone.observability/issues/50))
+
+
 ## 1.0.0b15 (2026-07-01)
 
 ### New features:
