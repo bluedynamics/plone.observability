@@ -1,12 +1,22 @@
 """Tests for otel/dbcounts.py — per-span ZODB transfer-count attributes."""
 
 
+class _Storage:
+    """Fake per-connection storage exposing zodb-pgjsonb load counters."""
+
+    def __init__(self, l2=0, pg=0):
+        self._l2_load_hits = l2
+        self._pg_load_count = pg
+
+
 class _Conn:
-    def __init__(self, loads=0, stores=0, load_time_ns=0):
+    def __init__(self, loads=0, stores=0, load_time_ns=0, storage=None):
         self.loads = loads
         self.stores = stores
         self._otel_load_time_ns = load_time_ns
         self.clear_args = []
+        if storage is not None:
+            self._storage = storage
 
     def getTransferCounts(self, clear=False):
         self.clear_args.append(clear)
@@ -34,9 +44,17 @@ class _Span:
 def test_read_counts_peeks_without_reset():
     from plone.observability.otel import dbcounts
 
-    conn = _Conn(loads=5, stores=2, load_time_ns=9)
-    assert dbcounts.read_counts(_Req(conn)) == (5, 2, 9)
+    conn = _Conn(loads=5, stores=2, load_time_ns=9, storage=_Storage(l2=3, pg=4))
+    assert dbcounts.read_counts(_Req(conn)) == (5, 2, 9, 3, 4)
     assert conn.clear_args == [False]  # peek, never reset
+
+
+def test_read_counts_defaults_cache_counters_to_zero():
+    """On a storage without the zodb-pgjsonb counters, l2/pg read as 0."""
+    from plone.observability.otel import dbcounts
+
+    conn = _Conn(loads=5, stores=2, load_time_ns=9)  # no _storage
+    assert dbcounts.read_counts(_Req(conn)) == (5, 2, 9, 0, 0)
 
 
 def test_read_counts_none_without_connection():
@@ -50,10 +68,12 @@ def test_annotate_sets_delta_including_zero():
     from plone.observability.otel import dbcounts
 
     span = _Span()
-    dbcounts.annotate(span, (1, 1, 1_000_000), (4, 1, 6_000_000))
+    dbcounts.annotate(span, (1, 1, 1_000_000, 2, 10), (4, 1, 6_000_000, 9, 11))
     assert span.attrs["plone.zodb.objects_loaded"] == 3
     assert span.attrs["plone.zodb.objects_stored"] == 0
     assert span.attrs["plone.zodb.load_time_ms"] == 5.0
+    assert span.attrs["plone.zodb.load_l2_hits"] == 7
+    assert span.attrs["plone.zodb.load_pg_queries"] == 1
 
 
 def test_annotate_noop_on_none():
@@ -91,6 +111,31 @@ def test_subrequest_span_carries_zodb_counts(span_exporter, monkeypatch):
     )
     assert span.attributes["plone.zodb.objects_loaded"] == 7
     assert span.attributes["plone.zodb.objects_stored"] == 0
+
+
+def test_subrequest_span_carries_cache_counters(span_exporter, monkeypatch):
+    monkeypatch.setenv("PLONE_OBSERVABILITY_OTEL_ENABLED", "1")
+    from plone.observability.otel import subrequest as sr
+
+    storage = _Storage()
+    conn = _Conn(storage=storage)
+    req = _Req(conn)
+    req.environ = {}
+    monkeypatch.setattr(sr, "getRequest", lambda: req)
+
+    def fake(url, **kw):
+        conn.loads += 151  # the tile "loads" 151 objects ...
+        storage._l2_load_hits += 140  # ... 140 from the shared cache ...
+        storage._pg_load_count += 11  # ... 11 from PostgreSQL
+        return _Resp(200)
+
+    sr._traced_subrequest(fake, None, ("/p/@@tile",), {})
+
+    span = next(
+        s for s in span_exporter.get_finished_spans() if s.name == "subrequest @@tile"
+    )
+    assert span.attributes["plone.zodb.load_l2_hits"] == 140
+    assert span.attributes["plone.zodb.load_pg_queries"] == 11
 
 
 def test_subrequest_span_carries_load_time(span_exporter, monkeypatch):
