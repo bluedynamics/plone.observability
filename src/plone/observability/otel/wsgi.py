@@ -3,6 +3,7 @@
 from opentelemetry.instrumentation.wsgi import OpenTelemetryMiddleware
 from plone.observability.otel import catalog
 from plone.observability.otel import exclusions
+from plone.observability.otel import instrumentors
 from plone.observability.otel import provider
 from plone.observability.otel import rendering
 from plone.observability.otel import subrequest
@@ -22,6 +23,7 @@ def make_filter(app, global_conf, **local_conf):
         catalog.instrument_catalog()
         subrequest.register()
         rendering.register()
+        instrumentors.enable()
 
     traced_app = OpenTelemetryMiddleware(app)
 
