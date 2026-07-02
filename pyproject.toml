@@ -55,6 +55,12 @@ opentelemetry = [
     "opentelemetry-exporter-otlp",
     "opentelemetry-instrumentation-wsgi",
 ]
+opentelemetry-io = [
+    "opentelemetry-instrumentation-botocore",
+    "opentelemetry-instrumentation-requests",
+    "opentelemetry-instrumentation-urllib3",
+    "opentelemetry-instrumentation-httpx",
+]
 
 [project.entry-points."paste.filter_app_factory"]
 observability = "plone.observability.metrics.providers.request:make_filter"

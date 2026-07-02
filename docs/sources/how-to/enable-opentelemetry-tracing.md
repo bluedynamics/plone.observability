@@ -45,6 +45,17 @@ To trace the `@@metrics` scrape after all, turn the defaults off:
 export PLONE_OBSERVABILITY_OTEL_EXCLUDE_DEFAULTS=0
 ```
 
+## External I/O spans (S3, HTTP)
+
+By default only this package's own spans are emitted. To also trace external I/O — S3 blob access (botocore/boto3) and outbound HTTP (requests/urllib3/httpx) — install the instrumentor packages and switch them on:
+
+```shell
+pip install "plone.observability[opentelemetry,opentelemetry-io]"
+export PLONE_OBSERVABILITY_OTEL_INSTRUMENTORS=1
+```
+
+Every supported instrumentor whose package is installed is enabled; those calls then appear as child spans nested under the active request/publish/render span. Note that `requests` uses `urllib3` internally, so with both enabled a single requests call produces a `requests` span *and* a nested `urllib3` span — install only the instrumentor you want if that is noisy.
+
 ```{seealso}
 - {doc}`/reference/tracing` for the emitted spans and their attributes.
 - {doc}`/how-to/add-custom-spans` to trace your own code.
